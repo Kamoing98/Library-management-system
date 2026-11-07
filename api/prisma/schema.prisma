@@ -24,11 +24,9 @@ model User {
   role      Role     @default(PATRON)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  reviews   Review[]
 
   // Relations
-  borrowedBooks BorrowRecord[]
-  reviews       Review[]
-
   @@map("users")
 }
 
@@ -36,7 +34,8 @@ model User {
 model Genre {
   id        String @id @default(uuid())
   name      String @unique
-  slug      String @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   books     Book[]
 
   @@map("genres")
@@ -44,60 +43,34 @@ model Genre {
 
 /// Book model referencing Genre via genreId foreign key
 model Book {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   title       String
   author      String
-  isbn        String   @unique
+  isbn        String    @unique
   publishedAt DateTime?
-  copies      Int      @default(1)
-  available   Int      @default(1)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Foreign key reference to Genre
+  copies      Int       @default(1)
+  available   Int       @default(1)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   genreId     String
-  genre       Genre    @relation(fields: [genreId], references: [id], onDelete: Restrict)
-
-  // Relations
-  borrowRecords BorrowRecord[]
-  reviews       Review[]
+  genre       Genre     @relation(fields: [genreId], references: [id], onDelete: Restrict)
+  reviews     Review[]
 
   @@map("books")
 }
 
-/// BorrowRecord tracks which patron has borrowed which book
-model BorrowRecord {
-  id         String   @id @default(uuid())
-  borrowedAt DateTime @default(now())
-  dueDate    DateTime
-  returnedAt DateTime?
-
-  // Foreign keys
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  bookId String
-  book   Book   @relation(fields: [bookId], references: [id], onDelete: Restrict)
-
-  @@map("borrow_records")
-}
-
-/// Review model for patron ratings and comments on books
+/// Review model for book ratings and comments
 model Review {
   id        String   @id @default(uuid())
-  rating    Int      // 1-5 star rating
-  comment   String?  // Optional text review
+  rating    Int
+  comment   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
-  // Foreign keys
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  bookId String
-  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
-
-  // Each user can only leave one review per book
   @@unique([userId, bookId])
   @@map("reviews")
 }
