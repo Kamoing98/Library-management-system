@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Role enum for user authorization
+enum Role {
+  PATRON
+  LIBRARIAN
+}
+
+/// User model representing both patrons and librarians
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  role      Role     @default(PATRON)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  borrowedBooks BorrowRecord[]
+  reviews       Review[]
+
+  @@map("users")
+}
+
+/// Genre model for categorizing books
+model Genre {
+  id        String @id @default(uuid())
+  name      String @unique
+  slug      String @unique
+  books     Book[]
+
+  @@map("genres")
+}
+
+/// Book model referencing Genre via genreId foreign key
+model Book {
+  id          String   @id @default(uuid())
+  title       String
+  author      String
+  isbn        String   @unique
+  publishedAt DateTime?
+  copies      Int      @default(1)
+  available   Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Foreign key reference to Genre
+  genreId     String
+  genre       Genre    @relation(fields: [genreId], references: [id], onDelete: Restrict)
+
+  // Relations
+  borrowRecords BorrowRecord[]
+  reviews       Review[]
+
+  @@map("books")
+}
+
+/// BorrowRecord tracks which patron has borrowed which book
+model BorrowRecord {
+  id         String   @id @default(uuid())
+  borrowedAt DateTime @default(now())
+  dueDate    DateTime
+  returnedAt DateTime?
+
+  // Foreign keys
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bookId String
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Restrict)
+
+  @@map("borrow_records")
+}
+
+/// Review model for patron ratings and comments on books
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int      // 1-5 star rating
+  comment   String?  // Optional text review
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Foreign keys
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bookId String
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  // Each user can only leave one review per book
+  @@unique([userId, bookId])
+  @@map("reviews")
+}
