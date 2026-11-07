@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Role enum for user authorization
+enum Role {
+  PATRON
+  LIBRARIAN
+}
+
+/// User model representing both patrons and librarians
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  role      Role     @default(PATRON)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  borrowedBooks BorrowRecord[]
+
+  @@map("users")
+}
+
+/// Genre model for categorizing books
+model Genre {
+  id        String @id @default(uuid())
+  name      String @unique
+  slug      String @unique
+  books     Book[]
+
+  @@map("genres")
+}
+
+/// Book model referencing Genre via genreId foreign key
+model Book {
+  id          String   @id @default(uuid())
+  title       String
+  author      String
+  isbn        String   @unique
+  publishedAt DateTime?
+  copies      Int      @default(1)
+  available   Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Foreign key reference to Genre
+  genreId     String
+  genre       Genre    @relation(fields: [genreId], references: [id], onDelete: Restrict)
+
+  // Relations
+  borrowRecords BorrowRecord[]
+
+  @@map("books")
+}
+
+/// BorrowRecord tracks which patron has borrowed which book
+model BorrowRecord {
+  id         String   @id @default(uuid())
+  borrowedAt DateTime @default(now())
+  dueDate    DateTime
+  returnedAt DateTime?
+
+  // Foreign keys
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bookId String
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Restrict)
+
+  @@map("borrow_records")
+}
