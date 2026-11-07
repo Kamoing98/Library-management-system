@@ -90,6 +90,18 @@ Borrowing is modeled as its own entity rather than a field on Book or User becau
 - A patron can have multiple active borrows simultaneously
 - Due dates and return tracking are borrow-specific, not book-specific
 
+### Review Model Design
+
+The `Review` model connects `User` and `Book` through foreign keys, with a `@@unique([userId, bookId])` compound constraint ensuring each patron can leave at most one review per book. The `rating` field is an integer (1–5) rather than a float, keeping the domain simple and preventing ambiguous half-star ratings at the database level. The `comment` field is optional (`String?`) to support quick star-only ratings without requiring written feedback.
+
+### Prisma vs. Document Database: What Felt Different
+
+Coming from a document database background (like MongoDB), the biggest shift when modeling in Prisma + PostgreSQL was **thinking in relations before data**. In MongoDB, you'd naturally embed a book's genre as a nested object `{ name: "Fantasy", slug: "fantasy" }` directly inside the book document — it's fast to read, no joins needed, and feels intuitive. With Prisma, you're forced to think about the *boundaries* between entities first: What's a separate table? What's a foreign key? What happens on delete?
+
+This upfront design cost pays off dramatically in **consistency and query power**. In a document DB, updating a genre name means finding and updating every embedded copy — a recipe for stale data. In Prisma, it's a single `UPDATE genres SET name = ... WHERE id = ...`. The trade-off is clear: document databases optimize for *write convenience and read speed* (everything you need is in one document), while Prisma/PostgreSQL optimizes for *data integrity and relational querying*. For a library catalog where books, genres, users, and borrows all interconnect, the relational model's guarantees are worth the extra schema ceremony.
+
+Another notable difference: **Prisma's type safety**. The generated client gives you compile-time guarantees about your queries — `prisma.book.findMany({ include: { genre: true } })` is fully typed. In a document DB, you're often casting `any` or maintaining separate TypeScript interfaces that can drift from reality. Prisma's schema-as-source-of-truth approach eliminates an entire class of bugs.
+
 ## API Endpoints
 
 | Method | Endpoint | Description |
@@ -101,6 +113,9 @@ Borrowing is modeled as its own entity rather than a field on Book or User becau
 | POST | /borrow | Borrow a book (patron) |
 | POST | /return/:id | Return a borrowed book |
 | GET | /users/me | Get current user profile |
+| GET | /books/:id/reviews | Get reviews for a book |
+| POST | /books/:id/reviews | Add a review (patron) |
+| DELETE | /reviews/:id | Delete a review (owner or librarian) |
 
 ## License
 

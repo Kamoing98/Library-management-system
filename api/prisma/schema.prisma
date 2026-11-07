@@ -27,6 +27,7 @@ model User {
 
   // Relations
   borrowedBooks BorrowRecord[]
+  reviews       Review[]
 
   @@map("users")
 }
@@ -59,6 +60,7 @@ model Book {
 
   // Relations
   borrowRecords BorrowRecord[]
+  reviews       Review[]
 
   @@map("books")
 }
@@ -78,4 +80,24 @@ model BorrowRecord {
   book   Book   @relation(fields: [bookId], references: [id], onDelete: Restrict)
 
   @@map("borrow_records")
+}
+
+/// Review model for patron ratings and comments on books
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int      // 1-5 star rating
+  comment   String?  // Optional text review
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Foreign keys
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bookId String
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  // Each user can only leave one review per book
+  @@unique([userId, bookId])
+  @@map("reviews")
 }

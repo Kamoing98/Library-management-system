@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { BookOpen, Database, Users, Layers, FileCode, Server, ChevronRight, Library, Shield, BookMarked } from 'lucide-react';
+import { BookOpen, Database, Users, Layers, FileCode, Server, ChevronRight, Library, Shield, BookMarked, Star, MessageSquare } from 'lucide-react';
 
-type Tab = 'overview' | 'schema' | 'seed' | 'service' | 'decisions';
+type Tab = 'overview' | 'schema' | 'seed' | 'reviews' | 'service' | 'decisions';
 
 const genres = [
   { name: 'Fiction', slug: 'fiction', bookCount: 4 },
@@ -28,6 +28,17 @@ const books = [
   { title: 'The Girl with the Dragon Tattoo', author: 'Stieg Larsson', genre: 'Mystery', isbn: '978-0307949486' },
   { title: 'Gone Girl', author: 'Gillian Flynn', genre: 'Mystery', isbn: '978-0307588371' },
   { title: 'The Silent Patient', author: 'Alex Michaelides', genre: 'Mystery', isbn: '978-1250301697' },
+];
+
+const reviews = [
+  { user: 'Bob Patron', book: 'The Great Gatsby', rating: 5, comment: "A masterpiece of American literature. Fitzgerald's prose is unmatched." },
+  { user: 'Jane Reader', book: 'The Great Gatsby', rating: 4, comment: 'Beautifully written, though the pacing felt slow at times.' },
+  { user: 'Bob Patron', book: 'Dune', rating: 5, comment: 'The world-building is incredible. A must-read for any sci-fi fan.' },
+  { user: 'Jane Reader', book: 'Dune', rating: 5, comment: 'Absolutely brilliant. The political intrigue keeps you hooked.' },
+  { user: 'Bob Patron', book: 'Sapiens', rating: 4, comment: 'Fascinating overview of human history. Some claims felt oversimplified.' },
+  { user: 'Jane Reader', book: 'The Name of the Wind', rating: 5, comment: 'Rothfuss writes like poetry. Kvothe is an unforgettable protagonist.' },
+  { user: 'Bob Patron', book: 'The Girl with the Dragon Tattoo', rating: 4, comment: 'Gripping thriller with complex characters. The mystery kept me guessing.' },
+  { user: 'Jane Reader', book: 'To Kill a Mockingbird', rating: 5, comment: 'Timeless and powerful. Atticus Finch is the hero we all need.' },
 ];
 
 const schemaCode = `generator client {
@@ -89,6 +100,20 @@ model BorrowRecord {
   bookId String
   book   Book   @relation(fields: [bookId], references: [id])
   @@map("borrow_records")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  bookId String
+  book   Book   @relation(fields: [bookId], references: [id])
+  @@unique([userId, bookId])
+  @@map("reviews")
 }`;
 
 const serviceCode = `import { Injectable, OnModuleInit } from '@nestjs/common';
@@ -227,6 +252,111 @@ function SchemaTab() {
             icon={<BookOpen className="w-5 h-5" />}
           />
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ReviewsTab() {
+  return (
+    <div className="space-y-6">
+      {/* Review Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+              <MessageSquare className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-900">{reviews.length}</div>
+              <div className="text-sm text-gray-500">Total Reviews</div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+              <Star className="w-5 h-5 text-amber-600 fill-amber-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-900">
+                {(reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)}
+              </div>
+              <div className="text-sm text-gray-500">Average Rating</div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-900">
+                {new Set(reviews.map(r => r.book)).size}
+              </div>
+              <div className="text-sm text-gray-500">Books Reviewed</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Reviews List */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+            Patron Reviews
+          </h3>
+          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+            @@unique([userId, bookId]) — one review per user per book
+          </span>
+        </div>
+        <div className="divide-y divide-gray-100">
+          {reviews.map((review, i) => (
+            <div key={i} className="p-5 hover:bg-gray-50 transition-colors">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-gray-900 text-sm">{review.user}</span>
+                    <span className="text-gray-300">•</span>
+                    <span className="text-sm text-indigo-600 font-medium">{review.book}</span>
+                  </div>
+                  <div className="flex items-center gap-1 mb-2">
+                    {Array.from({ length: 5 }).map((_, star) => (
+                      <Star
+                        key={star}
+                        className={`w-4 h-4 ${
+                          star < review.rating
+                            ? 'text-amber-400 fill-amber-400'
+                            : 'text-gray-200'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-sm text-gray-600">{review.comment}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Schema Note */}
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-100 p-6">
+        <h4 className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
+          <Star className="w-4 h-4" />
+          Review Model Design
+        </h4>
+        <p className="text-sm text-amber-800">
+          The <code className="bg-white/60 px-1 py-0.5 rounded font-mono text-xs">Review</code> model
+          connects <code className="bg-white/60 px-1 py-0.5 rounded font-mono text-xs">User</code> and{' '}
+          <code className="bg-white/60 px-1 py-0.5 rounded font-mono text-xs">Book</code> via foreign keys.
+          The <code className="bg-white/60 px-1 py-0.5 rounded font-mono text-xs">@@unique([userId, bookId])</code>{' '}
+          compound constraint ensures each patron can leave at most one review per book.
+          The <code className="bg-white/60 px-1 py-0.5 rounded font-mono text-xs">rating</code> is an integer (1–5)
+          and <code className="bg-white/60 px-1 py-0.5 rounded font-mono text-xs">comment</code> is optional.
+        </p>
       </div>
     </div>
   );
@@ -474,6 +604,7 @@ export default function App() {
     { id: 'overview', label: 'Overview', icon: <Library className="w-4 h-4" /> },
     { id: 'schema', label: 'Schema', icon: <Database className="w-4 h-4" /> },
     { id: 'seed', label: 'Seed Data', icon: <BookOpen className="w-4 h-4" /> },
+    { id: 'reviews', label: 'Reviews', icon: <Star className="w-4 h-4" /> },
     { id: 'service', label: 'Service', icon: <Server className="w-4 h-4" /> },
     { id: 'decisions', label: 'Decisions', icon: <FileCode className="w-4 h-4" /> },
   ];
@@ -522,6 +653,7 @@ export default function App() {
         {activeTab === 'overview' && <OverviewTab />}
         {activeTab === 'schema' && <SchemaTab />}
         {activeTab === 'seed' && <SeedTab />}
+        {activeTab === 'reviews' && <ReviewsTab />}
         {activeTab === 'service' && <ServiceTab />}
         {activeTab === 'decisions' && <DecisionsTab />}
       </main>

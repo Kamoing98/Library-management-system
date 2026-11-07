@@ -5,7 +5,8 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding database...');
 
-  // Clear existing data
+  // Clear existing data (order matters due to foreign key constraints)
+  await prisma.review.deleteMany();
   await prisma.borrowRecord.deleteMany();
   await prisma.book.deleteMany();
   await prisma.genre.deleteMany();
@@ -294,6 +295,76 @@ async function main() {
   ]);
 
   console.log(`✅ Created ${borrowRecords.length} borrow records`);
+
+  // Create review records (patrons rating books)
+  const reviews = await Promise.all([
+    prisma.review.create({
+      data: {
+        userId: bob.id,
+        bookId: books[0].id, // The Great Gatsby
+        rating: 5,
+        comment: 'A masterpiece of American literature. Fitzgerald\'s prose is unmatched.',
+      },
+    }),
+    prisma.review.create({
+      data: {
+        userId: jane.id,
+        bookId: books[0].id, // The Great Gatsby
+        rating: 4,
+        comment: 'Beautifully written, though the pacing felt slow at times.',
+      },
+    }),
+    prisma.review.create({
+      data: {
+        userId: bob.id,
+        bookId: books[4].id, // Dune
+        rating: 5,
+        comment: 'The world-building is incredible. A must-read for any sci-fi fan.',
+      },
+    }),
+    prisma.review.create({
+      data: {
+        userId: jane.id,
+        bookId: books[4].id, // Dune
+        rating: 5,
+        comment: 'Absolutely brilliant. The political intrigue keeps you hooked.',
+      },
+    }),
+    prisma.review.create({
+      data: {
+        userId: bob.id,
+        bookId: books[7].id, // Sapiens
+        rating: 4,
+        comment: 'Fascinating overview of human history. Some claims felt oversimplified.',
+      },
+    }),
+    prisma.review.create({
+      data: {
+        userId: jane.id,
+        bookId: books[10].id, // The Name of the Wind
+        rating: 5,
+        comment: 'Rothfuss writes like poetry. Kvothe is an unforgettable protagonist.',
+      },
+    }),
+    prisma.review.create({
+      data: {
+        userId: bob.id,
+        bookId: books[13].id, // The Girl with the Dragon Tattoo
+        rating: 4,
+        comment: 'Gripping thriller with complex characters. The mystery kept me guessing.',
+      },
+    }),
+    prisma.review.create({
+      data: {
+        userId: jane.id,
+        bookId: books[1].id, // To Kill a Mockingbird
+        rating: 5,
+        comment: 'Timeless and powerful. Atticus Finch is the hero we all need.',
+      },
+    }),
+  ]);
+
+  console.log(`✅ Created ${reviews.length} reviews`);
   console.log('🎉 Seeding complete!');
 }
 
