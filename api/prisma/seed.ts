@@ -6,35 +6,29 @@ async function main() {
   console.log('🌱 Seeding database...');
 
   // Clear existing data (order matters due to foreign key constraints)
-  await prisma.review.deleteMany();
   await prisma.book.deleteMany();
   await prisma.genre.deleteMany();
-  await prisma.user.deleteMany();
 
   // Insert Genre rows (at least 4)
   const genres = await Promise.all([
     prisma.genre.create({
       data: {
         name: 'Fiction',
-        slug: 'fiction',
       },
     }),
     prisma.genre.create({
       data: {
         name: 'Science Fiction',
-        slug: 'science-fiction',
       },
     }),
     prisma.genre.create({
       data: {
         name: 'Fantasy',
-        slug: 'fantasy',
       },
     }),
     prisma.genre.create({
       data: {
         name: 'Nonfiction',
-        slug: 'nonfiction',
       },
     }),
   ]);
@@ -43,7 +37,7 @@ async function main() {
 
   console.log(`✅ Created ${genres.length} genres`);
 
-  // Insert Book rows (at least 15, distributed across genres)
+  // Insert Book rows (at least 16, distributed across genres)
   const books = await Promise.all([
     // Fiction (4 books)
     prisma.book.create({
@@ -231,61 +225,6 @@ async function main() {
   ]);
 
   console.log(`✅ Created ${books.length} books`);
-
-  // Insert User rows (sample data)
-  const users = await Promise.all([
-    prisma.user.create({
-      data: {
-        email: 'librarian@example.com',
-        name: 'Lena Librarian',
-        role: 'LIBRARIAN',
-      },
-    }),
-    prisma.user.create({
-      data: {
-        email: 'patron1@example.com',
-        name: 'Alex Patron',
-        role: 'PATRON',
-      },
-    }),
-    prisma.user.create({
-      data: {
-        email: 'patron2@example.com',
-        name: 'Sam Reader',
-        role: 'PATRON',
-      },
-    }),
-  ]);
-
-  console.log(`✅ Created ${users.length} users`);
-
-  // Insert Review rows (sample data)
-  await Promise.all([
-    prisma.review.create({
-      data: {
-        userId: users[1].id,
-        bookId: books[0].id,
-        rating: 5,
-        comment: 'Classic and beautifully written.',
-      },
-    }),
-    prisma.review.create({
-      data: {
-        userId: users[2].id,
-        bookId: books[4].id,
-        rating: 4,
-        comment: 'A rich, immersive world.',
-      },
-    }),
-    prisma.review.create({
-      data: {
-        userId: users[1].id,
-        bookId: books[8].id,
-        rating: 5,
-        comment: 'A timeless fantasy adventure.',
-      },
-    }),
-  ]);
 
   console.log('🎉 Seeding complete!');
 }

@@ -10,13 +10,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Role enum for user authorization
 enum Role {
   PATRON
   LIBRARIAN
 }
 
-/// User model representing both patrons and librarians
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -24,16 +22,13 @@ model User {
   role      Role     @default(PATRON)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  reviews   Review[]
 
-  // Relations
   @@map("users")
 }
 
-/// Genre model for categorizing books
 model Genre {
-  id        String @id @default(uuid())
-  name      String @unique
+  id        String   @id @default(uuid())
+  name      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   books     Book[]
@@ -41,7 +36,6 @@ model Genre {
   @@map("genres")
 }
 
-/// Book model referencing Genre via genreId foreign key
 model Book {
   id          String    @id @default(uuid())
   title       String
@@ -54,23 +48,6 @@ model Book {
   updatedAt   DateTime  @updatedAt
   genreId     String
   genre       Genre     @relation(fields: [genreId], references: [id], onDelete: Restrict)
-  reviews     Review[]
 
   @@map("books")
-}
-
-/// Review model for book ratings and comments
-model Review {
-  id        String   @id @default(uuid())
-  rating    Int
-  comment   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bookId    String
-  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, bookId])
-  @@map("reviews")
 }
