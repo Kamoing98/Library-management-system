@@ -1,9 +1,35 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Seeding database...');
+
+  // Users (upserted, so re-running the seed never wipes accounts)
+  const librarianEmail = (process.env.SEED_LIBRARIAN_EMAIL ?? 'librarian@example.com').toLowerCase();
+  const librarianPassword = process.env.SEED_LIBRARIAN_PASSWORD ?? 'password123';
+  await prisma.user.upsert({
+    where: { email: librarianEmail },
+    update: { role: Role.LIBRARIAN },
+    create: {
+      email: librarianEmail,
+      name: 'Head Librarian',
+      password: await bcrypt.hash(librarianPassword, 10),
+      role: Role.LIBRARIAN,
+    },
+  });
+  await prisma.user.upsert({
+    where: { email: 'patron@example.com' },
+    update: {},
+    create: {
+      email: 'patron@example.com',
+      name: 'Sample Patron',
+      password: await bcrypt.hash('password123', 10),
+      role: Role.PATRON,
+    },
+  });
+  console.log(`✅ Upserted librarian (${librarianEmail}) and patron (patron@example.com)`);
 
   // Clear existing data (order matters due to foreign key constraints)
   await prisma.book.deleteMany();
